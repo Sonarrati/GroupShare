@@ -282,7 +282,6 @@
         }
       }
     } else {
-      // Fallback: copy to clipboard
       await navigator.clipboard.writeText(link);
       showToast(`✅ Invite link copied! You can now paste it anywhere.`);
     }
@@ -304,7 +303,9 @@
       saveGroups();
     }
   }
-  function saveGroups() { localStorage.setItem("groupshare_groups", JSON.stringify(groups)); }
+  function saveGroups() { 
+    localStorage.setItem("groupshare_groups", JSON.stringify(groups));
+  }
 
   function showToast(msg) {
     let t = document.querySelector('.toast-message');
@@ -490,7 +491,6 @@
     
     if (!title || !desc || !link || !category || !language || !country) return alert("Please fill all required fields");
     
-    // Validate WhatsApp link
     if (!isValidWhatsAppLink(link)) {
       alert("❌ Invalid WhatsApp group link! Please enter a valid invite link starting with https://chat.whatsapp.com/");
       return;
@@ -516,12 +516,12 @@
       clicks: 0
     };
     groups.unshift(newGroup);
-    saveGroups();
+    saveGroups();           // This triggers a storage event in other tabs
     document.getElementById("submitModal").classList.add("hidden");
     document.getElementById("submitGroupForm").reset();
     previewImg.classList.add("hidden");
     showToast("✅ Group submitted! Visible as Unverified.");
-    renderPublicGroups();
+    renderPublicGroups();   // Update current tab immediately
   });
 
   // Disclaimer modal events
@@ -557,6 +557,18 @@
     if (e.target === document.getElementById("submitModal")) document.getElementById("submitModal").classList.add("hidden");
     if (e.target === document.getElementById("disclaimerModal")) closeDisclaimer();
   };
+
+  // ---------- CROSS-TAB SYNC: listen for storage changes ----------
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'groupshare_groups') {
+      // Reload groups and refresh UI when another tab changes localStorage
+      loadGroups();
+      applyFiltersAndRender();
+      // Also rebuild category dropdown in case categories changed (though categories are static)
+      buildCategoryDropdown();
+      showToast("🔄 Groups updated from another tab");
+    }
+  });
 
   // Initialize
   loadGroups();
