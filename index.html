@@ -172,7 +172,7 @@
     <form id="submitGroupForm" class="p-6 space-y-4">
       <input type="text" id="subTitle" placeholder="Group Title *" required class="w-full border rounded-xl px-4 py-2.5">
       <textarea id="subDesc" rows="2" placeholder="Description *" required class="w-full border rounded-xl px-4 py-2.5"></textarea>
-      <input type="url" id="subLink" placeholder="WhatsApp Invite Link *" required class="w-full border rounded-xl px-4 py-2.5">
+      <input type="url" id="subLink" placeholder="WhatsApp Invite Link * (https://chat.whatsapp.com/...)" required class="w-full border rounded-xl px-4 py-2.5">
       <div class="grid grid-cols-2 gap-3">
         <select id="subCategory" required class="border rounded-xl px-3 py-2.5"></select>
         <select id="subLanguage" required class="border rounded-xl px-3 py-2.5"></select>
@@ -255,6 +255,11 @@
       reader.onerror = () => reject(new Error('File read error'));
       reader.readAsDataURL(file);
     });
+  }
+
+  // Validate WhatsApp group link
+  function isValidWhatsAppLink(link) {
+    return link.toLowerCase().startsWith('https://chat.whatsapp.com/');
   }
 
   // Load groups from localStorage
@@ -437,7 +442,7 @@
   }
   function closeDisclaimer() { document.getElementById("disclaimerModal").classList.add("hidden"); }
 
-  // Submit group
+  // Submit group with validation
   document.getElementById("openSubmitBtn").onclick = () => { 
     document.getElementById("submitModal").classList.remove("hidden"); 
     document.getElementById("submitModal").classList.add("flex");
@@ -457,6 +462,12 @@
     const imageFile = document.getElementById("subImageFile").files[0];
     
     if (!title || !desc || !link || !category || !language || !country) return alert("Please fill all required fields");
+    
+    // Validate WhatsApp link
+    if (!isValidWhatsAppLink(link)) {
+      alert("❌ Invalid WhatsApp group link! Please enter a valid invite link starting with https://chat.whatsapp.com/");
+      return;
+    }
     
     let imageData = DEFAULT_GROUP_IMAGE;
     if (imageFile) {
