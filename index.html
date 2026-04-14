@@ -42,7 +42,7 @@
     .category-option.active { background: #25D36620; color: #25D366; font-weight: 500; }
     footer a { transition: color 0.2s; }
     footer a:hover { color: #25D366; }
-    .image-hint { font-size: 0.7rem; color: #6b7280; margin-top: 0.25rem; }
+    .image-preview { width: 80px; height: 80px; object-fit: cover; border-radius: 12px; margin-top: 8px; border: 1px solid #e5e7eb; }
   </style>
 </head>
 <body>
@@ -176,7 +176,7 @@
   </div>
 </div>
 
-<!-- Submit Modal with improved image instruction -->
+<!-- Submit Modal with IMAGE UPLOAD -->
 <div id="submitModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
   <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
     <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
@@ -196,8 +196,10 @@
         <input type="text" id="subTags" placeholder="Tags (optional)" class="border rounded-xl px-4 py-2.5">
       </div>
       <div>
-        <input type="url" id="subImage" placeholder="Group Image URL (WhatsApp group DP)" class="w-full border rounded-xl px-4 py-2.5">
-        <p class="image-hint"><i class="fas fa-info-circle"></i> How to get the real WhatsApp group image: Open WhatsApp Web, go to the group, right-click the group profile picture → "Copy image address" → paste here. Leave empty for default icon.</p>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Group Image (Upload)</label>
+        <input type="file" id="subImageFile" accept="image/*" class="w-full border rounded-xl px-3 py-2">
+        <img id="imagePreview" class="image-preview hidden" alt="Preview">
+        <p class="text-xs text-gray-500 mt-1">Upload the actual WhatsApp group profile picture (optional). Leave empty for default icon.</p>
       </div>
       <button type="submit" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl">🚀 Submit (instant visible)</button>
       <p class="text-xs text-gray-400 text-center">No login • appears as "Unverified" until admin approves</p>
@@ -232,27 +234,25 @@
   const ALL_LANGUAGES = ["English","Hindi","Gujarati","Tamil","Telugu","Marathi","Bengali","Kannada","Malayalam","Punjabi","Odia","Assamese","Urdu","Sanskrit","Spanish","French","German","Arabic","Chinese (Mandarin)","Portuguese","Russian","Japanese","Korean","Italian","Turkish","Dutch","Polish","Swedish"];
   const ALL_COUNTRIES = ["Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Bangladesh","Belgium","Brazil","Canada","Chile","China","Colombia","Croatia","Czech Republic","Denmark","Egypt","Finland","France","Germany","Greece","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Lebanon","Malaysia","Mexico","Morocco","Nepal","Netherlands","New Zealand","Nigeria","Norway","Oman","Pakistan","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Singapore","South Africa","South Korea","Spain","Sri Lanka","Sweden","Switzerland","Taiwan","Thailand","Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Vietnam","Zimbabwe"];
 
-  // DEFAULT IMAGE (clean group icon)
+  // DEFAULT IMAGE (Base64 group icon)
   const DEFAULT_GROUP_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2325D366'/%3E%3Ccircle cx='50' cy='40' r='20' fill='white'/%3E%3Cpath d='M20 75 Q50 60 80 75' stroke='white' stroke-width='8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
 
   function getValidImageUrl(img) {
-    if (img && img.trim() !== "" && (img.startsWith("http") || img.startsWith("data:"))) {
-      return img;
-    }
+    if (img && img.trim() !== "" && (img.startsWith("http") || img.startsWith("data:"))) return img;
     return DEFAULT_GROUP_IMAGE;
   }
 
-  // Load groups
+  // Load groups from localStorage
   let groups = [];
   function loadGroups() {
     const stored = localStorage.getItem("groupshare_groups");
     if (stored) groups = JSON.parse(stored);
     else {
       groups = [
-        { id: "g1", title: "JavaScript Masters", description: "Advanced JS & React", link: "https://chat.whatsapp.com/DemoJS123", category: "Technology", language: "English", country: "United States", tags: [], image: "https://randomuser.me/api/portraits/men/1.jpg", status: "approved", reports: 0, clicks: 124 },
-        { id: "g2", title: "Remote Jobs Hub", description: "Daily remote jobs", link: "https://chat.whatsapp.com/JobsLink456", category: "Jobs / Hiring", language: "English", country: "India", tags: [], image: "https://randomuser.me/api/portraits/women/2.jpg", status: "approved", reports: 0, clicks: 89 },
+        { id: "g1", title: "JavaScript Masters", description: "Advanced JS & React", link: "https://chat.whatsapp.com/DemoJS123", category: "Technology", language: "English", country: "United States", tags: [], image: DEFAULT_GROUP_IMAGE, status: "approved", reports: 0, clicks: 124 },
+        { id: "g2", title: "Remote Jobs Hub", description: "Daily remote jobs", link: "https://chat.whatsapp.com/JobsLink456", category: "Jobs / Hiring", language: "English", country: "India", tags: [], image: DEFAULT_GROUP_IMAGE, status: "approved", reports: 0, clicks: 89 },
         { id: "g3", title: "Crypto Whales", description: "Crypto signals", link: "https://chat.whatsapp.com/Crypto789", category: "Crypto / Trading", language: "Hindi", country: "India", tags: [], image: "", status: "pending", reports: 2, clicks: 34 },
-        { id: "g4", title: "Gujarati Study Circle", description: "Exam prep", link: "https://chat.whatsapp.com/GujStudy", category: "Education / School / Learning", language: "Gujarati", country: "India", tags: [], image: "https://randomuser.me/api/portraits/men/3.jpg", status: "approved", reports: 0, clicks: 202 },
+        { id: "g4", title: "Gujarati Study Circle", description: "Exam prep", link: "https://chat.whatsapp.com/GujStudy", category: "Education / School / Learning", language: "Gujarati", country: "India", tags: [], image: DEFAULT_GROUP_IMAGE, status: "approved", reports: 0, clicks: 202 },
         { id: "g5", title: "Vegan Foodies", description: "Plant based recipes", link: "https://chat.whatsapp.com/Vegan", category: "Food / Drinks", language: "English", country: "Canada", tags: [], image: "", status: "pending", reports: 0, clicks: 12 }
       ];
       saveGroups();
@@ -309,6 +309,23 @@
     document.getElementById("subLanguage").innerHTML = '<option value="">Select language</option>' + ALL_LANGUAGES.map(l => `<option value="${l}">${l}</option>`).join('');
     document.getElementById("subCountry").innerHTML = '<option value="">Select country</option>' + ALL_COUNTRIES.map(c => `<option value="${c}">${c}</option>`).join('');
   }
+
+  // Image preview for upload
+  const fileInput = document.getElementById("subImageFile");
+  const previewImg = document.getElementById("imagePreview");
+  fileInput.addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        previewImg.src = event.target.result;
+        previewImg.classList.remove("hidden");
+      };
+      reader.readAsDataURL(file);
+    } else {
+      previewImg.classList.add("hidden");
+    }
+  });
 
   let searchQuery = "", selectedLang = "all", selectedCountry = "all";
   function getFilteredGroups() {
@@ -403,10 +420,16 @@
   }
   function closeDisclaimer() { document.getElementById("disclaimerModal").classList.add("hidden"); }
 
-  // Submit group
-  document.getElementById("openSubmitBtn").onclick = () => { document.getElementById("submitModal").classList.remove("hidden"); document.getElementById("submitModal").classList.add("flex"); };
+  // Submit group with image upload
+  document.getElementById("openSubmitBtn").onclick = () => { 
+    document.getElementById("submitModal").classList.remove("hidden"); 
+    document.getElementById("submitModal").classList.add("flex");
+    // Reset form and preview
+    document.getElementById("submitGroupForm").reset();
+    previewImg.classList.add("hidden");
+  };
   document.getElementById("closeSubmitModal").onclick = () => { document.getElementById("submitModal").classList.add("hidden"); };
-  document.getElementById("submitGroupForm").addEventListener("submit", (e) => {
+  document.getElementById("submitGroupForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const title = document.getElementById("subTitle").value.trim();
     const desc = document.getElementById("subDesc").value.trim();
@@ -415,16 +438,28 @@
     const language = document.getElementById("subLanguage").value;
     const country = document.getElementById("subCountry").value;
     const tags = document.getElementById("subTags").value;
-    const image = document.getElementById("subImage").value.trim();
+    const imageFile = document.getElementById("subImageFile").files[0];
+    
     if (!title || !desc || !link || !category || !language || !country) return alert("Please fill all required fields");
+    
+    let imageData = "";
+    if (imageFile) {
+      imageData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(imageFile);
+      });
+    }
+    
     const newGroup = {
       id: "g" + Date.now(), title, description: desc, link, category, language, country,
-      tags: tags ? tags.split(",").map(t => t.trim()) : [], image: image || "", status: "pending", reports: 0, clicks: 0
+      tags: tags ? tags.split(",").map(t => t.trim()) : [], image: imageData || "", status: "pending", reports: 0, clicks: 0
     };
     groups.unshift(newGroup);
     saveGroups();
     document.getElementById("submitModal").classList.add("hidden");
     document.getElementById("submitGroupForm").reset();
+    previewImg.classList.add("hidden");
     showToast("Group submitted! Visible as Unverified.");
     renderPublicGroups();
   });
