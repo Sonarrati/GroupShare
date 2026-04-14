@@ -112,7 +112,7 @@
   </div>
 </div>
 
-<!-- FOOTER -->
+<!-- FOOTER (same as before) -->
 <footer class="bg-gray-800 text-gray-300 mt-12">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
@@ -164,7 +164,7 @@
   </div>
 </footer>
 
-<!-- Modal for static pages -->
+<!-- Modals (Submit, Disclaimer, Info) - same as before but I'll include them -->
 <div id="infoModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
   <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
     <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
@@ -175,7 +175,6 @@
   </div>
 </div>
 
-<!-- Submit Modal -->
 <div id="submitModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
   <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
     <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
@@ -201,7 +200,6 @@
   </div>
 </div>
 
-<!-- Disclaimer Modal -->
 <div id="disclaimerModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
   <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl">
     <div class="p-5 border-b flex justify-between items-center">
@@ -227,6 +225,16 @@
   const ALL_CATEGORIES = ["Adult / 18+ / Hot","Art / Design / Photography","Auto / Vehicles","Business / Advertising / Marketing","Comedy / Funny","Dating / Flirting / Chatting","Education / School / Learning","Entertainment / Masti","Family / Relationships","Fan Club / Celebrities","Fashion / Style / Clothing","Film / Animation","Food / Drinks","Health / Fitness / Gym","Gaming","Technology","Travel / Tourism","Shopping / Deals","Jobs / Hiring","News / Updates","Sports","Music","Motivation / Self Growth","Religion / Spiritual","Crypto / Trading","Local / City Groups","Community / Social Work","Events / Meetups","Miscellaneous"];
   const ALL_LANGUAGES = ["English","Hindi","Gujarati","Tamil","Telugu","Marathi","Bengali","Kannada","Malayalam","Punjabi","Odia","Assamese","Urdu","Sanskrit","Spanish","French","German","Arabic","Chinese (Mandarin)","Portuguese","Russian","Japanese","Korean","Italian","Turkish","Dutch","Polish","Swedish"];
   const ALL_COUNTRIES = ["Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Bangladesh","Belgium","Brazil","Canada","Chile","China","Colombia","Croatia","Czech Republic","Denmark","Egypt","Finland","France","Germany","Greece","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Lebanon","Malaysia","Mexico","Morocco","Nepal","Netherlands","New Zealand","Nigeria","Norway","Oman","Pakistan","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Singapore","South Africa","South Korea","Spain","Sri Lanka","Sweden","Switzerland","Taiwan","Thailand","Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Vietnam","Zimbabwe"];
+
+  // DEFAULT IMAGE (base64 group icon - always works)
+  const DEFAULT_GROUP_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2325D366'/%3E%3Ccircle cx='50' cy='40' r='20' fill='white'/%3E%3Cpath d='M20 75 Q50 60 80 75' stroke='white' stroke-width='8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
+
+  function getValidImageUrl(img) {
+    if (img && img.trim() !== "" && (img.startsWith("http") || img.startsWith("data:"))) {
+      return img;
+    }
+    return DEFAULT_GROUP_IMAGE;
+  }
 
   // Load groups
   let groups = [];
@@ -256,9 +264,8 @@
     setTimeout(() => div.remove(), 2000);
   }
   function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
-  function getImageUrl(img) { return img && img.trim() ? img : "https://placehold.co/400x200/e2e8f0/4a5568?text=Group+Image"; }
 
-  // Category dropdown
+  // Category dropdown logic
   let activeCategory = "all";
   function buildCategoryDropdown() {
     const menu = document.getElementById("categoryDropdownMenu");
@@ -319,9 +326,11 @@
     } else {
       grid.classList.remove("hidden");
       empty.classList.add("hidden");
-      grid.innerHTML = filtered.map(g => `
+      grid.innerHTML = filtered.map(g => {
+        const imgSrc = getValidImageUrl(g.image);
+        return `
         <div class="bg-white rounded-2xl overflow-hidden shadow-md card-hover flex flex-col h-full">
-          <img src="${getImageUrl(g.image)}" class="w-full h-44 object-cover bg-gray-100" alt="Group DP">
+          <img src="${imgSrc}" class="w-full h-44 object-cover bg-gray-100" alt="Group DP" onerror="this.src='${DEFAULT_GROUP_IMAGE}'">
           <div class="p-4 flex-1">
             <div class="flex justify-between items-start gap-2">
               <h3 class="font-bold text-gray-800">${escapeHtml(g.title)}</h3>
@@ -344,7 +353,7 @@
             </div>
           </div>
         </div>
-      `).join('');
+      `}).join('');
       attachPublicEvents();
     }
   }
@@ -404,7 +413,7 @@
     if (!title || !desc || !link || !category || !language || !country) return alert("Please fill all required fields");
     const newGroup = {
       id: "g" + Date.now(), title, description: desc, link, category, language, country,
-      tags: tags ? tags.split(",").map(t => t.trim()) : [], image, status: "pending", reports: 0, clicks: 0
+      tags: tags ? tags.split(",").map(t => t.trim()) : [], image: image || "", status: "pending", reports: 0, clicks: 0
     };
     groups.unshift(newGroup);
     saveGroups();
@@ -457,19 +466,13 @@
     let title = "", content = "";
     if (page === 'about') {
       title = "About Us";
-      content = `<p class="mb-3">GROUPSHARE is a global, no-login platform dedicated to helping people discover and share WhatsApp groups across interests, languages, and countries.</p>
-      <p class="mb-3">Founded in 2026, our mission is to create the largest, safest, and most organized directory of WhatsApp communities.</p>
-      <p>We are independent and not affiliated with WhatsApp or Meta.</p>`;
+      content = `<p class="mb-3">GROUPSHARE is a global, no-login platform dedicated to helping people discover and share WhatsApp groups across interests, languages, and countries.</p><p class="mb-3">Founded in 2026, our mission is to create the largest, safest, and most organized directory of WhatsApp communities.</p><p>We are independent and not affiliated with WhatsApp or Meta.</p>`;
     } else if (page === 'contact') {
       title = "Contact Us";
       content = `<p class="mb-3">Email: <strong>support@groupshare.com</strong></p><p>Response within 24-48 hours.</p>`;
     } else if (page === 'faq') {
       title = "FAQ";
-      content = `<div class="space-y-3"><div><strong>❓ Is it free?</strong><br>Yes, completely free. No login required.</div>
-      <div><strong>❓ How to submit a group?</strong><br>Click "Submit Group" button.</div>
-      <div><strong>❓ Why "Unverified"?</strong><br>New groups are pending admin approval.</div>
-      <div><strong>❓ How to report?</strong><br>Click the flag icon on any group.</div>
-      <div><strong>❓ Affiliated with WhatsApp?</strong><br>No, we are an independent directory.</div></div>`;
+      content = `<div class="space-y-3"><div><strong>❓ Is it free?</strong><br>Yes, completely free. No login required.</div><div><strong>❓ How to submit a group?</strong><br>Click "Submit Group" button.</div><div><strong>❓ Why "Unverified"?</strong><br>New groups are pending admin approval.</div><div><strong>❓ How to report?</strong><br>Click the flag icon on any group.</div><div><strong>❓ Affiliated with WhatsApp?</strong><br>No, we are an independent directory.</div></div>`;
     } else if (page === 'privacy') {
       title = "Privacy Policy";
       content = `<p>GROUPSHARE does not collect personal data. All data is stored locally in your browser. We do not share or sell any information.</p>`;
