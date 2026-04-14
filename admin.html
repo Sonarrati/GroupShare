@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GROUPSHARE · Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #111827; }
+    .tab-btn.active-tab { background-color: rgba(255,255,255,0.2); border-bottom: 2px solid #25D366; }
+  </style>
+</head>
+<body class="text-white">
+<div class="max-w-7xl mx-auto px-4 py-6">
+  <div class="flex justify-between items-center mb-6">
+    <div class="flex items-center gap-3">
+      <div class="bg-[#25D366] w-12 h-12 rounded-2xl flex items-center justify-center">
+        <i class="fas fa-users text-white text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+    </div>
+    <a href="index.html" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl"><i class="fas fa-arrow-left"></i> Back to Website</a>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white/10 p-4 rounded-2xl"><div class="text-3xl font-bold" id="adminTotalGroups">0</div><div>Total Groups</div></div>
+    <div class="bg-white/10 p-4 rounded-2xl"><div class="text-3xl font-bold text-yellow-300" id="adminPendingCount">0</div><div>Pending</div></div>
+    <div class="bg-white/10 p-4 rounded-2xl"><div class="text-3xl font-bold text-green-300" id="adminApprovedCount">0</div><div>Approved</div></div>
+    <div class="bg-white/10 p-4 rounded-2xl"><div class="text-3xl font-bold text-blue-300" id="adminTotalClicks">0</div><div>Total Join Clicks</div></div>
+  </div>
+
+  <!-- Analytics -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="bg-white/10 p-4 rounded-2xl"><h3 class="font-bold mb-2">📊 Top Categories</h3><ul id="topCategoriesList" class="text-sm space-y-1"></ul></div>
+    <div class="bg-white/10 p-4 rounded-2xl"><h3 class="font-bold mb-2">🌍 Most Active Languages</h3><ul id="topLanguagesList" class="text-sm space-y-1"></ul></div>
+  </div>
+
+  <!-- Moderation Tabs -->
+  <div class="flex gap-2 border-b border-gray-600 mb-4">
+    <button class="tab-btn px-4 py-2 rounded-t-lg" data-tab="pending">Pending Groups</button>
+    <button class="tab-btn px-4 py-2 rounded-t-lg" data-tab="approved">Approved</button>
+    <button class="tab-btn px-4 py-2 rounded-t-lg" data-tab="reported">Reported</button>
+  </div>
+  <div id="pendingGroupsList" class="space-y-3"></div>
+  <div id="approvedGroupsList" class="hidden space-y-3"></div>
+  <div id="reportedGroupsList" class="hidden space-y-3"></div>
+</div>
+
+<script>
+  // Authentication
+  const ADMIN_USERNAME = "sonar123";
+  const ADMIN_PASSWORD = "Ra7359@@";
+  function authenticate() {
+    const username = prompt("Enter admin username:");
+    if (username !== ADMIN_USERNAME) { alert("Invalid username!"); window.location.href = "index.html"; return false; }
+    const password = prompt("Enter admin password:");
+    if (password !== ADMIN_PASSWORD) { alert("Wrong password!"); window.location.href = "index.html"; return false; }
+    return true;
+  }
+  if (!authenticate()) throw new Error("Auth failed");
+
+  let groups = [];
+  function loadGroups() {
+    const stored = localStorage.getItem("groupshare_groups");
+    if (stored) groups = JSON.parse(stored);
+    else {
+      groups = [
+        { id: "g1", title: "JavaScript Masters", description: "Advanced JS & React", link: "https://chat.whatsapp.com/DemoJS123", category: "Technology", language: "English", country: "United States", tags: [], image: "https://randomuser.me/api/portraits/men/1.jpg", status: "approved", reports: 0, clicks: 124 },
+        { id: "g2", title: "Remote Jobs Hub", description: "Daily remote jobs", link: "https://chat.whatsapp.com/JobsLink456", category: "Jobs / Hiring", language: "English", country: "India", tags: [], image: "https://randomuser.me/api/portraits/women/2.jpg", status: "approved", reports: 0, clicks: 89 },
+        { id: "g3", title: "Crypto Whales", description: "Crypto signals", link: "https://chat.whatsapp.com/Crypto789", category: "Crypto / Trading", language: "Hindi", country: "India", tags: [], image: "", status: "pending", reports: 2, clicks: 34 },
+        { id: "g4", title: "Gujarati Study Circle", description: "Exam prep", link: "https://chat.whatsapp.com/GujStudy", category: "Education / School / Learning", language: "Gujarati", country: "India", tags: [], image: "https://randomuser.me/api/portraits/men/3.jpg", status: "approved", reports: 0, clicks: 202 },
+        { id: "g5", title: "Vegan Foodies", description: "Plant based recipes", link: "https://chat.whatsapp.com/Vegan", category: "Food / Drinks", language: "English", country: "Canada", tags: [], image: "", status: "pending", reports: 0, clicks: 12 }
+      ];
+      saveGroups();
+    }
+  }
+  function saveGroups() { localStorage.setItem("groupshare_groups", JSON.stringify(groups)); updateStats(); }
+
+  function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+  function getImageUrl(img) { return img && img.trim() ? img : "https://placehold.co/400x200/e2e8f0/4a5568?text=Group+Image"; }
+
+  function updateStats() {
+    const total = groups.length;
+    const pending = groups.filter(g => g.status === 'pending').length;
+    const approved = groups.filter(g => g.status === 'approved').length;
+    const totalClicks = groups.reduce((sum, g) => sum + (g.clicks || 0), 0);
+    document.getElementById("adminTotalGroups").innerText = total;
+    document.getElementById("adminPendingCount").innerText = pending;
+    document.getElementById("adminApprovedCount").innerText = approved;
+    document.getElementById("adminTotalClicks").innerText = totalClicks;
+
+    const catCount = {};
+    groups.forEach(g => { if (g.status === 'approved' || g.status === 'pending') catCount[g.category] = (catCount[g.category] || 0) + 1; });
+    const topCats = Object.entries(catCount).sort((a,b) => b[1] - a[1]).slice(0,5);
+    document.getElementById("topCategoriesList").innerHTML = topCats.map(([c,n]) => `<li>${c}: ${n} groups</li>`).join('') || '<li>No data</li>';
+
+    const langCount = {};
+    groups.forEach(g => { if (g.status === 'approved' || g.status === 'pending') langCount[g.language] = (langCount[g.language] || 0) + 1; });
+    const topLangs = Object.entries(langCount).sort((a,b) => b[1] - a[1]).slice(0,5);
+    document.getElementById("topLanguagesList").innerHTML = topLangs.map(([l,n]) => `<li>${l}: ${n} groups</li>`).join('') || '<li>No data</li>';
+  }
+
+  function renderModeration() {
+    const pending = groups.filter(g => g.status === 'pending');
+    const approved = groups.filter(g => g.status === 'approved');
+    const reported = groups.filter(g => g.reports > 0 && g.status !== 'removed');
+
+    document.getElementById("pendingGroupsList").innerHTML = pending.map(g => `
+      <div class="bg-white/10 p-3 rounded-xl flex justify-between items-center flex-wrap gap-2">
+        <div class="flex gap-3 items-center"><img src="${getImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover"><div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">${escapeHtml(g.category)} | reports: ${g.reports}</p></div></div>
+        <div class="flex gap-2"><button data-id="${g.id}" class="approve-btn bg-green-600 px-3 py-1 rounded">✅ Approve</button><button data-id="${g.id}" class="reject-btn bg-red-600 px-3 py-1 rounded">❌ Reject</button><button data-id="${g.id}" class="edit-btn bg-blue-600 px-3 py-1 rounded">✏️ Edit</button></div>
+      </div>`).join('');
+    document.getElementById("approvedGroupsList").innerHTML = approved.map(g => `
+      <div class="bg-white/10 p-3 rounded-xl flex justify-between items-center flex-wrap gap-2">
+        <div class="flex gap-3 items-center"><img src="${getImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover"><div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">${escapeHtml(g.category)} | clicks: ${g.clicks||0} | reports: ${g.reports}</p></div></div>
+        <div><button data-id="${g.id}" class="remove-btn bg-red-600 px-3 py-1 rounded">🗑 Remove</button><button data-id="${g.id}" class="edit-btn bg-blue-600 px-3 py-1 rounded ml-2">✏️ Edit</button></div>
+      </div>`).join('');
+    document.getElementById("reportedGroupsList").innerHTML = reported.map(g => `
+      <div class="bg-white/10 p-3 rounded-xl flex justify-between items-center flex-wrap gap-2">
+        <div class="flex gap-3 items-center"><img src="${getImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover"><div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">Reports: ${g.reports}</p></div></div>
+        <div><button data-id="${g.id}" class="remove-btn bg-red-600 px-3 py-1 rounded">🗑 Remove</button><button data-id="${g.id}" class="ignore-report bg-gray-500 px-3 py-1 rounded ml-2">Ignore</button></div>
+      </div>`).join('');
+
+    document.querySelectorAll('.approve-btn').forEach(btn => btn.addEventListener('click', () => { const g = groups.find(g => g.id === btn.dataset.id); if(g) g.status = 'approved'; saveGroups(); renderModeration(); }));
+    document.querySelectorAll('.reject-btn').forEach(btn => btn.addEventListener('click', () => { const idx = groups.findIndex(g => g.id === btn.dataset.id); if(idx !== -1) groups.splice(idx,1); saveGroups(); renderModeration(); }));
+    document.querySelectorAll('.remove-btn').forEach(btn => btn.addEventListener('click', () => { const idx = groups.findIndex(g => g.id === btn.dataset.id); if(idx !== -1) groups.splice(idx,1); saveGroups(); renderModeration(); }));
+    document.querySelectorAll('.ignore-report').forEach(btn => btn.addEventListener('click', () => { const g = groups.find(g => g.id === btn.dataset.id); if(g) g.reports = 0; saveGroups(); renderModeration(); }));
+    document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => { const g = groups.find(g => g.id === btn.dataset.id); const newTitle = prompt("Edit title", g.title); if(newTitle) g.title = newTitle; const newDesc = prompt("Edit description", g.description); if(newDesc) g.description = newDesc; saveGroups(); renderModeration(); }));
+  }
+
+  function initTabs() {
+    const btns = document.querySelectorAll('.tab-btn');
+    btns.forEach(btn => btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.getElementById('pendingGroupsList').classList.add('hidden');
+      document.getElementById('approvedGroupsList').classList.add('hidden');
+      document.getElementById('reportedGroupsList').classList.add('hidden');
+      if (tab === 'pending') document.getElementById('pendingGroupsList').classList.remove('hidden');
+      else if (tab === 'approved') document.getElementById('approvedGroupsList').classList.remove('hidden');
+      else if (tab === 'reported') document.getElementById('reportedGroupsList').classList.remove('hidden');
+      btns.forEach(b => b.classList.remove('active-tab', 'bg-white/20'));
+      btn.classList.add('active-tab', 'bg-white/20');
+    }));
+    document.querySelector('.tab-btn').click();
+  }
+
+  loadGroups();
+  updateStats();
+  renderModeration();
+  initTabs();
+</script>
+</body>
+</html>
