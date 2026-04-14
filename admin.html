@@ -63,10 +63,9 @@
   }
   if (!authenticate()) throw new Error("Auth failed");
 
-  // Default image (same as frontend)
   const DEFAULT_GROUP_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2325D366'/%3E%3Ccircle cx='50' cy='40' r='20' fill='white'/%3E%3Cpath d='M20 75 Q50 60 80 75' stroke='white' stroke-width='8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
   function getValidImageUrl(img) {
-    if (img && img.trim() !== "" && (img.startsWith("http") || img.startsWith("data:"))) return img;
+    if (img && typeof img === 'string' && img.trim() !== "" && (img.startsWith("data:") || img.startsWith("http"))) return img;
     return DEFAULT_GROUP_IMAGE;
   }
 
@@ -76,11 +75,11 @@
     if (stored) groups = JSON.parse(stored);
     else {
       groups = [
-        { id: "g1", title: "JavaScript Masters", description: "Advanced JS & React", link: "https://chat.whatsapp.com/DemoJS123", category: "Technology", language: "English", country: "United States", tags: [], image: "https://randomuser.me/api/portraits/men/1.jpg", status: "approved", reports: 0, clicks: 124 },
-        { id: "g2", title: "Remote Jobs Hub", description: "Daily remote jobs", link: "https://chat.whatsapp.com/JobsLink456", category: "Jobs / Hiring", language: "English", country: "India", tags: [], image: "https://randomuser.me/api/portraits/women/2.jpg", status: "approved", reports: 0, clicks: 89 },
-        { id: "g3", title: "Crypto Whales", description: "Crypto signals", link: "https://chat.whatsapp.com/Crypto789", category: "Crypto / Trading", language: "Hindi", country: "India", tags: [], image: "", status: "pending", reports: 2, clicks: 34 },
-        { id: "g4", title: "Gujarati Study Circle", description: "Exam prep", link: "https://chat.whatsapp.com/GujStudy", category: "Education / School / Learning", language: "Gujarati", country: "India", tags: [], image: "https://randomuser.me/api/portraits/men/3.jpg", status: "approved", reports: 0, clicks: 202 },
-        { id: "g5", title: "Vegan Foodies", description: "Plant based recipes", link: "https://chat.whatsapp.com/Vegan", category: "Food / Drinks", language: "English", country: "Canada", tags: [], image: "", status: "pending", reports: 0, clicks: 12 }
+        { id: "g1", title: "JavaScript Masters", description: "Advanced JS & React", link: "https://chat.whatsapp.com/DemoJS123", category: "Technology", language: "English", country: "United States", tags: [], image: DEFAULT_GROUP_IMAGE, status: "approved", reports: 0, clicks: 124 },
+        { id: "g2", title: "Remote Jobs Hub", description: "Daily remote jobs", link: "https://chat.whatsapp.com/JobsLink456", category: "Jobs / Hiring", language: "English", country: "India", tags: [], image: DEFAULT_GROUP_IMAGE, status: "approved", reports: 0, clicks: 89 },
+        { id: "g3", title: "Crypto Whales", description: "Crypto signals", link: "https://chat.whatsapp.com/Crypto789", category: "Crypto / Trading", language: "Hindi", country: "India", tags: [], image: DEFAULT_GROUP_IMAGE, status: "pending", reports: 2, clicks: 34 },
+        { id: "g4", title: "Gujarati Study Circle", description: "Exam prep", link: "https://chat.whatsapp.com/GujStudy", category: "Education / School / Learning", language: "Gujarati", country: "India", tags: [], image: DEFAULT_GROUP_IMAGE, status: "approved", reports: 0, clicks: 202 },
+        { id: "g5", title: "Vegan Foodies", description: "Plant based recipes", link: "https://chat.whatsapp.com/Vegan", category: "Food / Drinks", language: "English", country: "Canada", tags: [], image: DEFAULT_GROUP_IMAGE, status: "pending", reports: 0, clicks: 12 }
       ];
       saveGroups();
     }
