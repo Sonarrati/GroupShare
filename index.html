@@ -42,6 +42,7 @@
     .category-option.active { background: #25D36620; color: #25D366; font-weight: 500; }
     footer a { transition: color 0.2s; }
     footer a:hover { color: #25D366; }
+    .image-hint { font-size: 0.7rem; color: #6b7280; margin-top: 0.25rem; }
   </style>
 </head>
 <body>
@@ -112,7 +113,7 @@
   </div>
 </div>
 
-<!-- FOOTER (same as before) -->
+<!-- FOOTER -->
 <footer class="bg-gray-800 text-gray-300 mt-12">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
@@ -164,7 +165,7 @@
   </div>
 </footer>
 
-<!-- Modals (Submit, Disclaimer, Info) - same as before but I'll include them -->
+<!-- Info Modal -->
 <div id="infoModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
   <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
     <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
@@ -175,6 +176,7 @@
   </div>
 </div>
 
+<!-- Submit Modal with improved image instruction -->
 <div id="submitModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
   <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
     <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
@@ -193,13 +195,17 @@
         <select id="subCountry" required class="border rounded-xl px-3 py-2.5"></select>
         <input type="text" id="subTags" placeholder="Tags (optional)" class="border rounded-xl px-4 py-2.5">
       </div>
-      <input type="url" id="subImage" placeholder="Group Image URL (optional)" class="w-full border rounded-xl px-4 py-2.5">
+      <div>
+        <input type="url" id="subImage" placeholder="Group Image URL (WhatsApp group DP)" class="w-full border rounded-xl px-4 py-2.5">
+        <p class="image-hint"><i class="fas fa-info-circle"></i> How to get the real WhatsApp group image: Open WhatsApp Web, go to the group, right-click the group profile picture → "Copy image address" → paste here. Leave empty for default icon.</p>
+      </div>
       <button type="submit" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl">🚀 Submit (instant visible)</button>
       <p class="text-xs text-gray-400 text-center">No login • appears as "Unverified" until admin approves</p>
     </form>
   </div>
 </div>
 
+<!-- Disclaimer Modal -->
 <div id="disclaimerModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
   <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl">
     <div class="p-5 border-b flex justify-between items-center">
@@ -226,7 +232,7 @@
   const ALL_LANGUAGES = ["English","Hindi","Gujarati","Tamil","Telugu","Marathi","Bengali","Kannada","Malayalam","Punjabi","Odia","Assamese","Urdu","Sanskrit","Spanish","French","German","Arabic","Chinese (Mandarin)","Portuguese","Russian","Japanese","Korean","Italian","Turkish","Dutch","Polish","Swedish"];
   const ALL_COUNTRIES = ["Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Bangladesh","Belgium","Brazil","Canada","Chile","China","Colombia","Croatia","Czech Republic","Denmark","Egypt","Finland","France","Germany","Greece","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Lebanon","Malaysia","Mexico","Morocco","Nepal","Netherlands","New Zealand","Nigeria","Norway","Oman","Pakistan","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Singapore","South Africa","South Korea","Spain","Sri Lanka","Sweden","Switzerland","Taiwan","Thailand","Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Vietnam","Zimbabwe"];
 
-  // DEFAULT IMAGE (base64 group icon - always works)
+  // DEFAULT IMAGE (clean group icon)
   const DEFAULT_GROUP_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2325D366'/%3E%3Ccircle cx='50' cy='40' r='20' fill='white'/%3E%3Cpath d='M20 75 Q50 60 80 75' stroke='white' stroke-width='8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
 
   function getValidImageUrl(img) {
