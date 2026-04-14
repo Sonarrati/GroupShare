@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>GROUPSHARE · Discover WhatsApp Groups</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { font-family: 'Inter', 'Poppins', sans-serif; }
+    body { background: #e5ddd5; display: flex; flex-direction: column; min-height: 100vh; }
+    .main-content { flex: 1; }
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.15); }
+    .modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); }
+    .toast-message {
+      position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+      background: #1f2937; color: white; padding: 10px 20px; border-radius: 40px;
+      font-size: 14px; z-index: 1000; animation: fadeInOut 2s ease forwards;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+      85% { opacity: 1; }
+      100% { opacity: 0; visibility: hidden; }
+    }
+    .category-dropdown { position: relative; width: 100%; }
+    .category-dropdown-btn {
+      width: 100%; background: white; border: 1px solid #e5e7eb; border-radius: 0.75rem;
+      padding: 0.75rem 1rem; text-align: left; display: flex; justify-content: space-between;
+      align-items: center; cursor: pointer;
+    }
+    .category-dropdown-menu {
+      position: absolute; top: 100%; left: 0; right: 0; background: white;
+      border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+      margin-top: 0.5rem; max-height: 300px; overflow-y: auto; z-index: 50; display: none;
+    }
+    .category-dropdown-menu.show { display: block; }
+    .category-option { padding: 0.5rem 1rem; cursor: pointer; transition: background 0.15s; }
+    .category-option:hover { background: #f3f4f6; }
+    .category-option.active { background: #25D36620; color: #25D366; font-weight: 500; }
+    footer a { transition: color 0.2s; }
+    footer a:hover { color: #25D366; }
+  </style>
+</head>
+<body>
+
+<div class="main-content">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+    <!-- Header – NO ADMIN BUTTON -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 md:mb-8">
+      <div class="flex items-center gap-3">
+        <div class="bg-[#25D366] w-12 h-12 rounded-2xl flex items-center justify-center shadow-md">
+          <i class="fas fa-users text-white text-2xl"></i>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-800">GROUPSHARE</h1>
+        <span class="bg-gray-700/20 text-gray-700 text-xs px-2 py-1 rounded-full">global directory</span>
+      </div>
+      <button id="openSubmitBtn" class="bg-[#25D366] hover:bg-[#20b859] text-white font-semibold px-5 py-2.5 rounded-full shadow-md transition flex items-center gap-2">
+        <i class="fas fa-plus-circle"></i> Submit Group
+      </button>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="bg-white/70 backdrop-blur-sm border border-white/40 rounded-xl p-3 mb-6 text-center text-xs text-gray-600">
+      <i class="fas fa-shield-alt text-[#25D366] mr-1"></i> Independent directory — not affiliated with WhatsApp. Groups are user-submitted.
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="bg-white rounded-2xl shadow-md p-4 md:p-5 mb-6">
+      <div class="relative mb-4">
+        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        <input type="text" id="searchInput" placeholder="Search groups by title or description..." class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 focus:border-[#25D366] outline-none">
+      </div>
+
+      <!-- Category Dropdown -->
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-gray-500 mb-1"><i class="fas fa-tags"></i> Category</label>
+        <div class="category-dropdown">
+          <button type="button" class="category-dropdown-btn" id="categoryDropdownBtn">
+            <span id="selectedCategoryLabel">All Categories</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="category-dropdown-menu" id="categoryDropdownMenu"></div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[150px]">
+          <label class="block text-xs font-semibold text-gray-500 mb-1"><i class="fas fa-language"></i> Language</label>
+          <select id="languageFilter" class="w-full border rounded-xl px-3 py-2.5 bg-white text-sm"></select>
+        </div>
+        <div class="flex-1 min-w-[150px]">
+          <label class="block text-xs font-semibold text-gray-500 mb-1"><i class="fas fa-globe"></i> Country</label>
+          <select id="countryFilter" class="w-full border rounded-xl px-3 py-2.5 bg-white text-sm"></select>
+        </div>
+        <button id="resetFiltersBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl transition"><i class="fas fa-undo-alt"></i> Reset</button>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center mb-4 text-sm text-gray-700">
+      <div class="bg-white/60 rounded-full px-4 py-1.5"><i class="fas fa-users mr-1 text-[#25D366]"></i> <span id="groupCountDisplay">0</span> groups found</div>
+      <div class="text-xs"><i class="fas fa-check-circle text-green-600"></i> Verified & <i class="fas fa-clock text-yellow-600"></i> Unverified</div>
+    </div>
+
+    <div id="groupsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"></div>
+    <div id="emptyState" class="hidden text-center py-16 bg-white/40 rounded-2xl mt-6">
+      <i class="fas fa-comments text-5xl text-gray-400 mb-3"></i>
+      <p class="text-gray-500">No groups found. Be the first to submit a group!</p>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="bg-gray-800 text-gray-300 mt-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="bg-[#25D366] w-8 h-8 rounded-xl flex items-center justify-center">
+            <i class="fas fa-users text-white text-sm"></i>
+          </div>
+          <h3 class="font-bold text-white text-lg">GROUPSHARE</h3>
+        </div>
+        <p class="text-sm">Global WhatsApp group directory. Discover and share communities instantly.</p>
+        <div class="flex gap-3 mt-4">
+          <a href="#" class="hover:text-[#25D366] transition"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="hover:text-[#25D366] transition"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="hover:text-[#25D366] transition"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="hover:text-[#25D366] transition"><i class="fab fa-linkedin-in"></i></a>
+        </div>
+      </div>
+      <div>
+        <h4 class="font-semibold text-white mb-3">Quick Links</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" onclick="showPage('about'); return false;" class="hover:text-[#25D366]">About Us</a></li>
+          <li><a href="#" onclick="showPage('contact'); return false;" class="hover:text-[#25D366]">Contact Us</a></li>
+          <li><a href="#" onclick="showPage('faq'); return false;" class="hover:text-[#25D366]">FAQ</a></li>
+          <li><a href="#" onclick="showPage('privacy'); return false;" class="hover:text-[#25D366]">Privacy Policy</a></li>
+          <li><a href="#" onclick="showPage('terms'); return false;" class="hover:text-[#25D366]">Terms of Service</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-semibold text-white mb-3">Support</h4>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" onclick="showPage('report'); return false;" class="hover:text-[#25D366]">Report Abuse</a></li>
+          <li><a href="#" onclick="showPage('guidelines'); return false;" class="hover:text-[#25D366]">Community Guidelines</a></li>
+          <li><a href="admin.html" class="hover:text-[#25D366]"><i class="fas fa-user-shield mr-1"></i> Admin Login</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="font-semibold text-white mb-3">Contact</h4>
+        <ul class="space-y-2 text-sm">
+          <li><i class="fas fa-envelope mr-2 text-[#25D366]"></i> support@groupshare.com</li>
+          <li><i class="fas fa-clock mr-2 text-[#25D366]"></i> Mon-Fri, 9AM-6PM</li>
+          <li><i class="fas fa-map-marker-alt mr-2 text-[#25D366]"></i> Global Platform</li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-gray-700 mt-8 pt-6 text-center text-xs">
+      <p>© 2026 GROUPSHARE. Independent directory — not affiliated with WhatsApp or Meta.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- Modal for static pages -->
+<div id="infoModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+  <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl">
+    <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+      <h2 class="text-xl font-bold" id="infoModalTitle">About Us</h2>
+      <button id="closeInfoModal" class="text-gray-400 text-2xl">&times;</button>
+    </div>
+    <div class="p-6" id="infoModalContent"></div>
+  </div>
+</div>
+
+<!-- Submit Modal -->
+<div id="submitModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+  <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+      <h2 class="text-xl font-bold"><i class="fab fa-whatsapp text-[#25D366] mr-2"></i>Submit WhatsApp group</h2>
+      <button id="closeSubmitModal" class="text-gray-400 text-2xl">&times;</button>
+    </div>
+    <form id="submitGroupForm" class="p-6 space-y-4">
+      <input type="text" id="subTitle" placeholder="Group Title *" required class="w-full border rounded-xl px-4 py-2.5">
+      <textarea id="subDesc" rows="2" placeholder="Description *" required class="w-full border rounded-xl px-4 py-2.5"></textarea>
+      <input type="url" id="subLink" placeholder="WhatsApp Invite Link *" required class="w-full border rounded-xl px-4 py-2.5">
+      <div class="grid grid-cols-2 gap-3">
+        <select id="subCategory" required class="border rounded-xl px-3 py-2.5"></select>
+        <select id="subLanguage" required class="border rounded-xl px-3 py-2.5"></select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <select id="subCountry" required class="border rounded-xl px-3 py-2.5"></select>
+        <input type="text" id="subTags" placeholder="Tags (optional)" class="border rounded-xl px-4 py-2.5">
+      </div>
+      <input type="url" id="subImage" placeholder="Group Image URL (optional)" class="w-full border rounded-xl px-4 py-2.5">
+      <button type="submit" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl">🚀 Submit (instant visible)</button>
+      <p class="text-xs text-gray-400 text-center">No login • appears as "Unverified" until admin approves</p>
+    </form>
+  </div>
+</div>
+
+<!-- Disclaimer Modal -->
+<div id="disclaimerModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 modal-overlay">
+  <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+    <div class="p-5 border-b flex justify-between items-center">
+      <div><i class="fab fa-whatsapp text-2xl text-[#25D366]"></i> <span class="font-bold">Join disclaimer</span></div>
+      <button id="closeDisclaimerBtn" class="text-gray-400 text-2xl">&times;</button>
+    </div>
+    <div class="p-5">
+      <div class="bg-gray-50 rounded-xl p-4 h-40 overflow-y-auto text-sm mb-4">
+        <p class="font-semibold">⚠️ Important Notice</p>
+        <p>• Not affiliated with WhatsApp or Meta.<br>• You join at your own risk.<br>• We do not endorse group content.<br>• Respect group rules.</p>
+      </div>
+      <label class="flex items-center gap-3 cursor-pointer mb-5">
+        <input type="checkbox" id="disclaimerCheckbox" class="w-5 h-5 accent-[#25D366]">
+        <span class="text-sm">I have read and agree to the disclaimer.</span>
+      </label>
+      <button id="confirmJoinBtn" class="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl disabled:opacity-50">Agree & Join</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- MASTER LISTS ----------
+  const ALL_CATEGORIES = ["Adult / 18+ / Hot","Art / Design / Photography","Auto / Vehicles","Business / Advertising / Marketing","Comedy / Funny","Dating / Flirting / Chatting","Education / School / Learning","Entertainment / Masti","Family / Relationships","Fan Club / Celebrities","Fashion / Style / Clothing","Film / Animation","Food / Drinks","Health / Fitness / Gym","Gaming","Technology","Travel / Tourism","Shopping / Deals","Jobs / Hiring","News / Updates","Sports","Music","Motivation / Self Growth","Religion / Spiritual","Crypto / Trading","Local / City Groups","Community / Social Work","Events / Meetups","Miscellaneous"];
+  const ALL_LANGUAGES = ["English","Hindi","Gujarati","Tamil","Telugu","Marathi","Bengali","Kannada","Malayalam","Punjabi","Odia","Assamese","Urdu","Sanskrit","Spanish","French","German","Arabic","Chinese (Mandarin)","Portuguese","Russian","Japanese","Korean","Italian","Turkish","Dutch","Polish","Swedish"];
+  const ALL_COUNTRIES = ["Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Bangladesh","Belgium","Brazil","Canada","Chile","China","Colombia","Croatia","Czech Republic","Denmark","Egypt","Finland","France","Germany","Greece","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Lebanon","Malaysia","Mexico","Morocco","Nepal","Netherlands","New Zealand","Nigeria","Norway","Oman","Pakistan","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Singapore","South Africa","South Korea","Spain","Sri Lanka","Sweden","Switzerland","Taiwan","Thailand","Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Vietnam","Zimbabwe"];
+
+  // Load groups
+  let groups = [];
+  function loadGroups() {
+    const stored = localStorage.getItem("groupshare_groups");
+    if (stored) groups = JSON.parse(stored);
+    else {
+      groups = [
+        { id: "g1", title: "JavaScript Masters", description: "Advanced JS & React", link: "https://chat.whatsapp.com/DemoJS123", category: "Technology", language: "English", country: "United States", tags: [], image: "https://randomuser.me/api/portraits/men/1.jpg", status: "approved", reports: 0, clicks: 124 },
+        { id: "g2", title: "Remote Jobs Hub", description: "Daily remote jobs", link: "https://chat.whatsapp.com/JobsLink456", category: "Jobs / Hiring", language: "English", country: "India", tags: [], image: "https://randomuser.me/api/portraits/women/2.jpg", status: "approved", reports: 0, clicks: 89 },
+        { id: "g3", title: "Crypto Whales", description: "Crypto signals", link: "https://chat.whatsapp.com/Crypto789", category: "Crypto / Trading", language: "Hindi", country: "India", tags: [], image: "", status: "pending", reports: 2, clicks: 34 },
+        { id: "g4", title: "Gujarati Study Circle", description: "Exam prep", link: "https://chat.whatsapp.com/GujStudy", category: "Education / School / Learning", language: "Gujarati", country: "India", tags: [], image: "https://randomuser.me/api/portraits/men/3.jpg", status: "approved", reports: 0, clicks: 202 },
+        { id: "g5", title: "Vegan Foodies", description: "Plant based recipes", link: "https://chat.whatsapp.com/Vegan", category: "Food / Drinks", language: "English", country: "Canada", tags: [], image: "", status: "pending", reports: 0, clicks: 12 }
+      ];
+      saveGroups();
+    }
+  }
+  function saveGroups() { localStorage.setItem("groupshare_groups", JSON.stringify(groups)); }
+
+  function showToast(msg) {
+    let t = document.querySelector('.toast-message');
+    if (t) t.remove();
+    let div = document.createElement('div');
+    div.className = 'toast-message';
+    div.innerText = msg;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 2000);
+  }
+  function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+  function getImageUrl(img) { return img && img.trim() ? img : "https://placehold.co/400x200/e2e8f0/4a5568?text=Group+Image"; }
+
+  // Category dropdown
+  let activeCategory = "all";
+  function buildCategoryDropdown() {
+    const menu = document.getElementById("categoryDropdownMenu");
+    menu.innerHTML = `<div class="category-option ${activeCategory === 'all' ? 'active' : ''}" data-category="all">📁 All Categories</div>` +
+      ALL_CATEGORIES.map(cat => `<div class="category-option ${activeCategory === cat ? 'active' : ''}" data-category="${cat}">📌 ${cat}</div>`).join('');
+    document.querySelectorAll('.category-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        activeCategory = opt.dataset.category;
+        document.getElementById("selectedCategoryLabel").innerText = activeCategory === 'all' ? 'All Categories' : activeCategory;
+        document.querySelectorAll('.category-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+        document.getElementById("categoryDropdownMenu").classList.remove('show');
+        applyFiltersAndRender();
+      });
+    });
+  }
+  document.getElementById("categoryDropdownBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    document.getElementById("categoryDropdownMenu").classList.toggle("show");
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".category-dropdown")) document.getElementById("categoryDropdownMenu").classList.remove("show");
+  });
+
+  function populateFilters() {
+    const langSel = document.getElementById("languageFilter");
+    langSel.innerHTML = '<option value="all">All languages</option>' + ALL_LANGUAGES.map(l => `<option value="${l}">${l}</option>`).join('');
+    langSel.value = "all";
+    const countrySel = document.getElementById("countryFilter");
+    countrySel.innerHTML = '<option value="all">All countries</option>' + ALL_COUNTRIES.map(c => `<option value="${c}">${c}</option>`).join('');
+    countrySel.value = "all";
+  }
+  function populateFormDropdowns() {
+    document.getElementById("subCategory").innerHTML = '<option value="">Select category</option>' + ALL_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+    document.getElementById("subLanguage").innerHTML = '<option value="">Select language</option>' + ALL_LANGUAGES.map(l => `<option value="${l}">${l}</option>`).join('');
+    document.getElementById("subCountry").innerHTML = '<option value="">Select country</option>' + ALL_COUNTRIES.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
+  let searchQuery = "", selectedLang = "all", selectedCountry = "all";
+  function getFilteredGroups() {
+    return groups.filter(g => {
+      const matchSearch = searchQuery === "" || g.title.toLowerCase().includes(searchQuery.toLowerCase()) || g.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchCat = activeCategory === "all" || g.category === activeCategory;
+      const matchLang = selectedLang === "all" || g.language === selectedLang;
+      const matchCountry = selectedCountry === "all" || g.country === selectedCountry;
+      return matchSearch && matchCat && matchLang && matchCountry && g.status !== "rejected" && g.status !== "removed";
+    });
+  }
+
+  function renderPublicGroups() {
+    const filtered = getFilteredGroups();
+    document.getElementById("groupCountDisplay").innerText = filtered.length;
+    const grid = document.getElementById("groupsGrid");
+    const empty = document.getElementById("emptyState");
+    if (filtered.length === 0) {
+      grid.classList.add("hidden");
+      empty.classList.remove("hidden");
+    } else {
+      grid.classList.remove("hidden");
+      empty.classList.add("hidden");
+      grid.innerHTML = filtered.map(g => `
+        <div class="bg-white rounded-2xl overflow-hidden shadow-md card-hover flex flex-col h-full">
+          <img src="${getImageUrl(g.image)}" class="w-full h-44 object-cover bg-gray-100" alt="Group DP">
+          <div class="p-4 flex-1">
+            <div class="flex justify-between items-start gap-2">
+              <h3 class="font-bold text-gray-800">${escapeHtml(g.title)}</h3>
+              ${g.status === 'approved' ? '<span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full"><i class="fas fa-check-circle"></i> Verified</span>' : '<span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full"><i class="fas fa-clock"></i> Unverified</span>'}
+            </div>
+            <p class="text-gray-500 text-sm mt-1 line-clamp-2">${escapeHtml(g.description)}</p>
+            <div class="flex flex-wrap gap-1 mt-3">
+              <span class="bg-gray-100 text-xs px-2 py-1 rounded-full">${escapeHtml(g.category)}</span>
+              <span class="bg-gray-100 text-xs px-2 py-1 rounded-full">${escapeHtml(g.language)}</span>
+              <span class="bg-gray-100 text-xs px-2 py-1 rounded-full">${escapeHtml(g.country)}</span>
+            </div>
+            <div class="mt-4 flex gap-2">
+              <button data-link="${g.link}" class="join-group-trigger bg-[#25D366] text-white text-sm font-semibold px-3 py-2 rounded-xl flex-1"><i class="fab fa-whatsapp"></i> Join</button>
+              <button data-link="${g.link}" data-title="${escapeHtml(g.title)}" class="share-group-trigger bg-gray-200 text-gray-700 px-3 py-2 rounded-xl"><i class="fas fa-share-alt"></i></button>
+              <button data-id="${g.id}" class="report-group-trigger text-gray-400 hover:text-red-500 px-2"><i class="fas fa-flag"></i></button>
+            </div>
+            <div class="text-[10px] text-gray-400 mt-2 flex justify-between">
+              <span><i class="far fa-eye"></i> ${g.clicks || 0} joins</span>
+              <span><i class="fas fa-exclamation-triangle"></i> ${g.reports || 0}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      attachPublicEvents();
+    }
+  }
+
+  function attachPublicEvents() {
+    document.querySelectorAll('.join-group-trigger').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.preventDefault(); openDisclaimer(btn.getAttribute('data-link')); });
+    });
+    document.querySelectorAll('.share-group-trigger').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const link = btn.getAttribute('data-link'), title = btn.getAttribute('data-title');
+        await navigator.clipboard.writeText(link);
+        showToast(`✅ "${title}" invite link copied!`);
+      });
+    });
+    document.querySelectorAll('.report-group-trigger').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const group = groups.find(g => g.id === id);
+        if (group) { group.reports = (group.reports || 0) + 1; saveGroups(); showToast(`Reported "${group.title}"`); renderPublicGroups(); }
+      });
+    });
+  }
+
+  function applyFiltersAndRender() {
+    searchQuery = document.getElementById("searchInput").value;
+    selectedLang = document.getElementById("languageFilter").value;
+    selectedCountry = document.getElementById("countryFilter").value;
+    renderPublicGroups();
+  }
+
+  let pendingJoinLink = "";
+  function openDisclaimer(link) {
+    pendingJoinLink = link;
+    const chk = document.getElementById("disclaimerCheckbox");
+    const btn = document.getElementById("confirmJoinBtn");
+    chk.checked = false;
+    btn.disabled = true;
+    document.getElementById("disclaimerModal").classList.remove("hidden");
+    document.getElementById("disclaimerModal").classList.add("flex");
+  }
+  function closeDisclaimer() { document.getElementById("disclaimerModal").classList.add("hidden"); }
+
+  // Submit group
+  document.getElementById("openSubmitBtn").onclick = () => { document.getElementById("submitModal").classList.remove("hidden"); document.getElementById("submitModal").classList.add("flex"); };
+  document.getElementById("closeSubmitModal").onclick = () => { document.getElementById("submitModal").classList.add("hidden"); };
+  document.getElementById("submitGroupForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = document.getElementById("subTitle").value.trim();
+    const desc = document.getElementById("subDesc").value.trim();
+    const link = document.getElementById("subLink").value.trim();
+    const category = document.getElementById("subCategory").value;
+    const language = document.getElementById("subLanguage").value;
+    const country = document.getElementById("subCountry").value;
+    const tags = document.getElementById("subTags").value;
+    const image = document.getElementById("subImage").value.trim();
+    if (!title || !desc || !link || !category || !language || !country) return alert("Please fill all required fields");
+    const newGroup = {
+      id: "g" + Date.now(), title, description: desc, link, category, language, country,
+      tags: tags ? tags.split(",").map(t => t.trim()) : [], image, status: "pending", reports: 0, clicks: 0
+    };
+    groups.unshift(newGroup);
+    saveGroups();
+    document.getElementById("submitModal").classList.add("hidden");
+    document.getElementById("submitGroupForm").reset();
+    showToast("Group submitted! Visible as Unverified.");
+    renderPublicGroups();
+  });
+
+  // Disclaimer modal events
+  document.getElementById("closeDisclaimerBtn").onclick = closeDisclaimer;
+  document.getElementById("disclaimerCheckbox").addEventListener("change", (e) => { document.getElementById("confirmJoinBtn").disabled = !e.target.checked; });
+  document.getElementById("confirmJoinBtn").addEventListener("click", () => {
+    if (pendingJoinLink) {
+      const found = groups.find(g => g.link === pendingJoinLink);
+      if (found) found.clicks = (found.clicks || 0) + 1;
+      saveGroups();
+      window.open(pendingJoinLink, '_blank');
+      closeDisclaimer();
+      renderPublicGroups();
+    }
+  });
+
+  // Reset filters
+  document.getElementById("resetFiltersBtn").addEventListener("click", () => {
+    document.getElementById("searchInput").value = "";
+    activeCategory = "all";
+    selectedLang = "all";
+    selectedCountry = "all";
+    document.getElementById("languageFilter").value = "all";
+    document.getElementById("countryFilter").value = "all";
+    document.getElementById("selectedCategoryLabel").innerText = "All Categories";
+    buildCategoryDropdown();
+    applyFiltersAndRender();
+  });
+  document.getElementById("searchInput").addEventListener("input", applyFiltersAndRender);
+  document.getElementById("languageFilter").addEventListener("change", applyFiltersAndRender);
+  document.getElementById("countryFilter").addEventListener("change", applyFiltersAndRender);
+  window.onclick = (e) => {
+    if (e.target === document.getElementById("submitModal")) document.getElementById("submitModal").classList.add("hidden");
+    if (e.target === document.getElementById("disclaimerModal")) closeDisclaimer();
+    if (e.target === document.getElementById("infoModal")) closeInfoModal();
+  };
+
+  // Info modal (footer pages)
+  const infoModal = document.getElementById("infoModal");
+  const infoModalTitle = document.getElementById("infoModalTitle");
+  const infoModalContent = document.getElementById("infoModalContent");
+  function showPage(page) {
+    let title = "", content = "";
+    if (page === 'about') {
+      title = "About Us";
+      content = `<p class="mb-3">GROUPSHARE is a global, no-login platform dedicated to helping people discover and share WhatsApp groups across interests, languages, and countries.</p>
+      <p class="mb-3">Founded in 2026, our mission is to create the largest, safest, and most organized directory of WhatsApp communities.</p>
+      <p>We are independent and not affiliated with WhatsApp or Meta.</p>`;
+    } else if (page === 'contact') {
+      title = "Contact Us";
+      content = `<p class="mb-3">Email: <strong>support@groupshare.com</strong></p><p>Response within 24-48 hours.</p>`;
+    } else if (page === 'faq') {
+      title = "FAQ";
+      content = `<div class="space-y-3"><div><strong>❓ Is it free?</strong><br>Yes, completely free. No login required.</div>
+      <div><strong>❓ How to submit a group?</strong><br>Click "Submit Group" button.</div>
+      <div><strong>❓ Why "Unverified"?</strong><br>New groups are pending admin approval.</div>
+      <div><strong>❓ How to report?</strong><br>Click the flag icon on any group.</div>
+      <div><strong>❓ Affiliated with WhatsApp?</strong><br>No, we are an independent directory.</div></div>`;
+    } else if (page === 'privacy') {
+      title = "Privacy Policy";
+      content = `<p>GROUPSHARE does not collect personal data. All data is stored locally in your browser. We do not share or sell any information.</p>`;
+    } else if (page === 'terms') {
+      title = "Terms of Service";
+      content = `<p>By using GROUPSHARE you agree that you join WhatsApp groups at your own risk. We are not liable for any content or interactions.</p>`;
+    } else if (page === 'report') {
+      title = "Report Abuse";
+      content = `<p>Use the flag icon on any group card to report abuse. You can also email abuse@groupshare.com.</p>`;
+    } else if (page === 'guidelines') {
+      title = "Community Guidelines";
+      content = `<ul class="list-disc pl-5"><li>No spam</li><li>No illegal content</li><li>Respect others</li><li>Adult content only in designated category</li></ul>`;
+    }
+    infoModalTitle.innerText = title;
+    infoModalContent.innerHTML = content;
+    infoModal.classList.remove("hidden");
+    infoModal.classList.add("flex");
+  }
+  function closeInfoModal() { infoModal.classList.add("hidden"); }
+  document.getElementById("closeInfoModal").addEventListener("click", closeInfoModal);
+
+  loadGroups();
+  populateFilters();
+  populateFormDropdowns();
+  buildCategoryDropdown();
+  applyFiltersAndRender();
+</script>
+</body>
+</html>
