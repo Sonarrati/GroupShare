@@ -220,11 +220,13 @@
   const ALL_LANGUAGES = ["English","Hindi","Gujarati","Tamil","Telugu","Marathi","Bengali","Kannada","Malayalam","Punjabi","Odia","Assamese","Urdu","Sanskrit","Spanish","French","German","Arabic","Chinese (Mandarin)","Portuguese","Russian","Japanese","Korean","Italian","Turkish","Dutch","Polish","Swedish"];
   const ALL_COUNTRIES = ["Afghanistan","Albania","Algeria","Argentina","Australia","Austria","Bangladesh","Belgium","Brazil","Canada","Chile","China","Colombia","Croatia","Czech Republic","Denmark","Egypt","Finland","France","Germany","Greece","Hong Kong","Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Lebanon","Malaysia","Mexico","Morocco","Nepal","Netherlands","New Zealand","Nigeria","Norway","Oman","Pakistan","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Singapore","South Africa","South Korea","Spain","Sri Lanka","Sweden","Switzerland","Taiwan","Thailand","Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Vietnam","Zimbabwe"];
 
-  // DEFAULT IMAGE (reliable SVG)
+  // DEFAULT IMAGE (reliable SVG base64)
   const DEFAULT_GROUP_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2325D366'/%3E%3Ccircle cx='50' cy='40' r='20' fill='white'/%3E%3Cpath d='M20 75 Q50 60 80 75' stroke='white' stroke-width='8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
 
   function getValidImageUrl(img) {
-    if (img && typeof img === 'string' && img.trim() !== "" && (img.startsWith("data:") || img.startsWith("http"))) return img;
+    if (img && typeof img === 'string' && img.trim() !== "" && (img.startsWith("data:") || img.startsWith("http"))) {
+      return img;
+    }
     return DEFAULT_GROUP_IMAGE;
   }
 
@@ -260,6 +262,30 @@
   // Validate WhatsApp group link
   function isValidWhatsAppLink(link) {
     return link.toLowerCase().startsWith('https://chat.whatsapp.com/');
+  }
+
+  // Share function using Web Share API
+  async function shareGroup(link, title) {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Join "${title}" WhatsApp group!`,
+          url: link
+        });
+        showToast(`✅ Sharing dialog opened for "${title}"`);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          showToast(`⚠️ Could not share. Copying link instead.`);
+          await navigator.clipboard.writeText(link);
+          showToast(`✅ Link copied to clipboard!`);
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      await navigator.clipboard.writeText(link);
+      showToast(`✅ Invite link copied! You can now paste it anywhere.`);
+    }
   }
 
   // Load groups from localStorage
@@ -409,9 +435,10 @@
     });
     document.querySelectorAll('.share-group-trigger').forEach(btn => {
       btn.addEventListener('click', async (e) => {
-        const link = btn.getAttribute('data-link'), title = btn.getAttribute('data-title');
-        await navigator.clipboard.writeText(link);
-        showToast(`✅ "${title}" invite link copied!`);
+        const link = btn.getAttribute('data-link');
+        const title = btn.getAttribute('data-title');
+        e.preventDefault();
+        await shareGroup(link, title);
       });
     });
     document.querySelectorAll('.report-group-trigger').forEach(btn => {
