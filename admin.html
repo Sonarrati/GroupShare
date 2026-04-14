@@ -63,6 +63,13 @@
   }
   if (!authenticate()) throw new Error("Auth failed");
 
+  // Default image (same as frontend)
+  const DEFAULT_GROUP_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2325D366'/%3E%3Ccircle cx='50' cy='40' r='20' fill='white'/%3E%3Cpath d='M20 75 Q50 60 80 75' stroke='white' stroke-width='8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E";
+  function getValidImageUrl(img) {
+    if (img && img.trim() !== "" && (img.startsWith("http") || img.startsWith("data:"))) return img;
+    return DEFAULT_GROUP_IMAGE;
+  }
+
   let groups = [];
   function loadGroups() {
     const stored = localStorage.getItem("groupshare_groups");
@@ -81,7 +88,6 @@
   function saveGroups() { localStorage.setItem("groupshare_groups", JSON.stringify(groups)); updateStats(); }
 
   function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
-  function getImageUrl(img) { return img && img.trim() ? img : "https://placehold.co/400x200/e2e8f0/4a5568?text=Group+Image"; }
 
   function updateStats() {
     const total = groups.length;
@@ -111,17 +117,26 @@
 
     document.getElementById("pendingGroupsList").innerHTML = pending.map(g => `
       <div class="bg-white/10 p-3 rounded-xl flex justify-between items-center flex-wrap gap-2">
-        <div class="flex gap-3 items-center"><img src="${getImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover"><div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">${escapeHtml(g.category)} | reports: ${g.reports}</p></div></div>
+        <div class="flex gap-3 items-center">
+          <img src="${getValidImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover bg-gray-700" onerror="this.src='${DEFAULT_GROUP_IMAGE}'">
+          <div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">${escapeHtml(g.category)} | reports: ${g.reports}</p></div>
+        </div>
         <div class="flex gap-2"><button data-id="${g.id}" class="approve-btn bg-green-600 px-3 py-1 rounded">✅ Approve</button><button data-id="${g.id}" class="reject-btn bg-red-600 px-3 py-1 rounded">❌ Reject</button><button data-id="${g.id}" class="edit-btn bg-blue-600 px-3 py-1 rounded">✏️ Edit</button></div>
       </div>`).join('');
     document.getElementById("approvedGroupsList").innerHTML = approved.map(g => `
       <div class="bg-white/10 p-3 rounded-xl flex justify-between items-center flex-wrap gap-2">
-        <div class="flex gap-3 items-center"><img src="${getImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover"><div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">${escapeHtml(g.category)} | clicks: ${g.clicks||0} | reports: ${g.reports}</p></div></div>
+        <div class="flex gap-3 items-center">
+          <img src="${getValidImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover bg-gray-700" onerror="this.src='${DEFAULT_GROUP_IMAGE}'">
+          <div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">${escapeHtml(g.category)} | clicks: ${g.clicks||0} | reports: ${g.reports}</p></div>
+        </div>
         <div><button data-id="${g.id}" class="remove-btn bg-red-600 px-3 py-1 rounded">🗑 Remove</button><button data-id="${g.id}" class="edit-btn bg-blue-600 px-3 py-1 rounded ml-2">✏️ Edit</button></div>
       </div>`).join('');
     document.getElementById("reportedGroupsList").innerHTML = reported.map(g => `
       <div class="bg-white/10 p-3 rounded-xl flex justify-between items-center flex-wrap gap-2">
-        <div class="flex gap-3 items-center"><img src="${getImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover"><div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">Reports: ${g.reports}</p></div></div>
+        <div class="flex gap-3 items-center">
+          <img src="${getValidImageUrl(g.image)}" class="w-12 h-12 rounded-full object-cover bg-gray-700" onerror="this.src='${DEFAULT_GROUP_IMAGE}'">
+          <div><p class="font-bold">${escapeHtml(g.title)}</p><p class="text-xs">Reports: ${g.reports}</p></div>
+        </div>
         <div><button data-id="${g.id}" class="remove-btn bg-red-600 px-3 py-1 rounded">🗑 Remove</button><button data-id="${g.id}" class="ignore-report bg-gray-500 px-3 py-1 rounded ml-2">Ignore</button></div>
       </div>`).join('');
 
